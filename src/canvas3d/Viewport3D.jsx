@@ -11,13 +11,11 @@ const CameraHandler = observer(({ controlsRef }) => {
 
   useEffect(() => {
     if (controlsRef.current) {
-      if (uiManager.activeSide === 'front') {
-        controlsRef.current.setLookAt(0, 0, 10, 0, 0, 0, true);
-      } else {
-        controlsRef.current.setLookAt(0, 0, -10, 0, 0, 0, true);
-      }
+      const sideDirection = uiManager.activeSide === 'front' ? 1 : -1;
+      const distance = 10 * (100 / uiManager.zoomLevel);
+      controlsRef.current.setLookAt(0, 0, sideDirection * distance, 0, 0, 0, true);
     }
-  }, [uiManager.activeSide]);
+  }, [uiManager.activeSide, uiManager.zoomLevel]);
 
   return <CameraControls ref={controlsRef} makeDefault enabled={!uiManager.isDragging} />;
 });
@@ -38,7 +36,8 @@ const ScreenshotCapture = observer(({ controlsRef, onCaptureReady }) => {
     const selectedObject = uiManager.selectedObject;
     const waitForFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
     const captureSide = async (side) => {
-      const z = side === 'front' ? 10 : -10;
+      const zoomDistance = 10 * (100 / uiManager.zoomLevel);
+      const z = side === 'front' ? zoomDistance : -zoomDistance;
       await controlsRef.current.setLookAt(0, 0, z, 0, 0, 0, false);
       await waitForFrame();
       gl.render(scene, camera);
@@ -80,7 +79,8 @@ const ScreenshotCapture = observer(({ controlsRef, onCaptureReady }) => {
       return { front, back };
     } finally {
       try {
-        const sideZ = uiManager.activeSide === 'front' ? 10 : -10;
+        const zoomDistance = 10 * (100 / uiManager.zoomLevel);
+        const sideZ = uiManager.activeSide === 'front' ? zoomDistance : -zoomDistance;
         await controlsRef.current.setLookAt(0, 0, sideZ, 0, 0, 0, false);
       } finally {
         uiManager.setSelectedObject(selectedObject);

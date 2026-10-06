@@ -7,6 +7,7 @@ export default class UIManager {
   isDragging = false; // Used to lock camera during drag interactions
   selectedObject = null; // { type: 'graphic' | 'text', id }
   clipboard = null;
+  backEnabled = false;
   
   constructor(designManager) {
     this.designManager = designManager;
@@ -14,7 +15,17 @@ export default class UIManager {
   }
 
   setActiveSide(side) {
+    if (side === 'back' && !this.backEnabled) return;
     this.activeSide = side;
+  }
+
+  enableBackSide() {
+    this.backEnabled = true;
+    this.activeSide = 'back';
+  }
+
+  setZoomLevel(level) {
+    this.zoomLevel = Math.min(150, Math.max(50, Number(level)));
   }
 
   setIsDragging(val) {
@@ -155,4 +166,3 @@ export default class UIManager {
     }
   }
 }
-

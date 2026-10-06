@@ -40,13 +40,13 @@ const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWid
     <TransformNode 
       width={w} 
       height={h} 
-      position={[0, 0, depth / 2 + zOffset]} 
+      position={[layerProps.position?.[0] || 0, layerProps.position?.[1] || 0, depth / 2 + zOffset]} 
       dragLimits={dragLimits} 
       objectType="text"
       objectId={side === 'back' ? 'text-back' : 'text'}
       layerProps={layerProps}
     >
-      <mesh renderOrder={20}>
+      <mesh renderOrder={100}>
         <planeGeometry args={[w, h]} />
         <meshStandardMaterial 
           map={textures.diffuse}

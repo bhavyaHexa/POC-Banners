@@ -53,7 +53,7 @@ export const DraggableGraphic = observer(({ layer, depth, dragLimits, canvasWidt
     <TransformNode 
       width={w} 
       height={h} 
-      position={[0, 0, depth / 2 + zOffset]} 
+      position={[layer.position?.[0] || 0, layer.position?.[1] || 0, depth / 2 + zOffset]} 
       dragLimits={dragLimits} 
       objectType="graphic" 
       objectId={layer.id}

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { DragControls, Line } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -170,19 +170,39 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
   const livePosRef = useRef([position?.[0] || 0, position?.[1] || 0, position?.[2] || 0]);
   const innerWrapRef = useRef();
 
+  // Sync external Z-position changes (like stacking order) without destroying user's dragged X/Y!
+  useEffect(() => {
+    if (position) {
+      setSavedPos(prev => [prev[0], prev[1], position[2]]);
+      livePosRef.current = [livePosRef.current[0], livePosRef.current[1], position[2]];
+    }
+  }, [position?.[2]]);
+
   useFrame(() => {
     // If selected and dragging, constantly record the DragControl's wrapper position
     if (isSelected && innerWrapRef.current && innerWrapRef.current.parent) {
-      const p = innerWrapRef.current.parent.position;
+      // drei's DragControls sets the matrix directly (matrixAutoUpdate=false)
+      const parentMatrix = innerWrapRef.current.parent.matrix;
+      const p = new THREE.Vector3();
+      p.setFromMatrixPosition(parentMatrix);
       
-      // CRITICAL: DragControls might try to lock or reset the Z-axis.
-      // We MUST physically enforce our intended Z-offset so it doesn't sink into the background!
       const intendedZ = position ? position[2] : 0;
-      if (p.z !== intendedZ) p.z = intendedZ;
       
-      livePosRef.current = [p.x, p.y, intendedZ];
+      // Calculate TRUE absolute local position by adding drag delta (p) to the initial savedPos
+      const totalX = p.x + savedPos[0];
+      const totalY = p.y + savedPos[1];
+      
+      livePosRef.current = [totalX, totalY, intendedZ];
     }
   });
+
+  // When transitioning to deselected state, bake the accumulated live position into savedPos.
+  // We cannot do this during onDragEnd because DragControls would double-apply its internal offset!
+  useEffect(() => {
+    if (!isSelected) {
+      setSavedPos([...livePosRef.current]);
+    }
+  }, [isSelected]);
 
   // Handle positions
   const handles = [
@@ -325,7 +345,11 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
       {isSelected ? (
         <DragControls 
           axisLock="z" 
-          dragLimits={dynamicLimits}
+          dragLimits={dynamicLimits ? [
+            [dynamicLimits[0][0] - savedPos[0], dynamicLimits[0][1] - savedPos[0]],
+            [dynamicLimits[1][0] - savedPos[1], dynamicLimits[1][1] - savedPos[1]],
+            [0, 0]
+          ] : undefined}
           onDragStart={() => {
             if (controls) controls.enabled = false;
             uiManager.setIsDragging(true);
@@ -335,7 +359,15 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
             if (controls) controls.enabled = true;
             uiManager.setIsDragging(false);
             document.body.style.removeProperty('cursor');
-            setSavedPos([...livePosRef.current]);
+            
+            // Save the true final absolute position to the global layer manager!
+            const newPos = [...livePosRef.current];
+            const globalManager = rootStore.designManager.layerManager;
+            if (objectType === 'text') {
+              globalManager.updateTextProps({ position: [newPos[0], newPos[1]] });
+            } else {
+              globalManager.updateLayer(objectId, { position: [newPos[0], newPos[1]] });
+            }
           }}
         >
           <group ref={innerWrapRef} position={savedPos}>

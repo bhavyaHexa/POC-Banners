@@ -114,6 +114,7 @@ function App() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [shareError, setShareError] = useState('');
   const [previews, setPreviews] = useState(null);
+  const [footerDialog, setFooterDialog] = useState(null);
 
   const registerScreenshotCapture = useCallback((capture) => {
     captureScreenshotsRef.current = capture;
@@ -191,38 +192,121 @@ function App() {
         </main>
       </div>
 
-      <footer className="h-16 shrink-0 border-t border-gray-200 bg-white px-5 flex items-center justify-between shadow-sm">
-        <button
-          type="button"
-          onClick={openShareDialog}
-          className="flex items-center gap-2 rounded-md bg-[#ff7848] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#f36737] focus:outline-none focus:ring-2 focus:ring-orange-300"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7 10l5-5m0 0l5 5m-5-5v12m-7 3h14" />
-          </svg>
-          Share
-        </button>
+      <footer className="relative z-20 h-[58px] shrink-0 overflow-x-auto border-t border-gray-200 bg-white shadow-sm">
+        <div className="flex h-full min-w-[1050px] items-center justify-between gap-4 px-4">
+          <div className="flex h-full shrink-0 items-center rounded-r-xl bg-white">
+            <FooterAction icon="M12 18h.01M9.09 9a3 3 0 015.82 1c0 2-3 3-3 3" label="Need Help" onClick={() => setFooterDialog('help')} />
+            <span className="h-7 border-l border-gray-200" />
+            <FooterAction icon="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" label="Guideline" onClick={() => setFooterDialog('guideline')} />
+            <span className="h-7 border-l border-gray-200" />
+            <FooterAction icon="M18 8a3 3 0 10-2.83-4M6 12a3 3 0 100-6 3 3 0 000 6zm12 9a3 3 0 100-6 3 3 0 000 6zM8.6 10.8l6.8 4.4m0-7.4l-6.8 4.4" label="Share" onClick={openShareDialog} />
+            <span className="mx-3 h-7 border-l border-gray-200" />
+            <label className="sr-only" htmlFor="banner-zoom">Banner zoom</label>
+            <input
+              id="banner-zoom"
+              type="range"
+              min="50"
+              max="150"
+              step="5"
+              value={uiManager.zoomLevel}
+              onChange={(event) => uiManager.setZoomLevel(event.target.value)}
+              className="w-28 accent-blue-900"
+            />
+            <span className="mx-2 h-1 w-1 rounded-full bg-blue-950" />
+            <select
+              aria-label="Zoom level"
+              value={uiManager.zoomLevel}
+              onChange={(event) => uiManager.setZoomLevel(event.target.value)}
+              className="h-10 w-24 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
+            >
+              {[50, 75, 100, 125, 150].map((zoom) => (
+                <option key={zoom} value={zoom}>{zoom}%</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="bg-gray-100 p-1 rounded-lg border border-gray-200 flex">
-          {['front', 'back'].map((side) => (
+          <div className="flex h-full min-w-0 flex-1 items-center justify-center gap-3">
             <button
-              key={side}
               type="button"
-              onClick={() => uiManager.setActiveSide(side)}
-              aria-pressed={uiManager.activeSide === side}
-              className={`px-6 py-2 rounded-md text-sm font-semibold capitalize transition-all ${
-                uiManager.activeSide === side
-                  ? 'bg-white text-blue-700 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+              onClick={() => uiManager.setActiveSide('front')}
+              aria-pressed={uiManager.activeSide === 'front'}
+              className={`h-full px-6 text-sm font-semibold transition-colors ${
+                uiManager.activeSide === 'front'
+                  ? 'bg-blue-50 text-blue-800'
+                  : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              {side}
+              Front
             </button>
-          ))}
-        </div>
+            {uiManager.backEnabled ? (
+              <button
+                type="button"
+                onClick={() => uiManager.setActiveSide('back')}
+                aria-pressed={uiManager.activeSide === 'back'}
+                className={`h-full px-6 text-sm font-semibold transition-colors ${
+                  uiManager.activeSide === 'back'
+                    ? 'bg-blue-50 text-blue-800'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Back
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => uiManager.enableBackSide()}
+                className="whitespace-nowrap rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+              >
+                Add Back for <strong>$5.38</strong>
+              </button>
+            )}
+          </div>
 
-        <div className="text-sm font-medium text-gray-600">
-          {sizeManager.width} x {sizeManager.height} {sizeManager.unit}
+          <div className="flex shrink-0 items-center gap-3">
+            <label htmlFor="banner-size-preset" className="text-sm text-gray-700">Size</label>
+            <select
+              id="banner-size-preset"
+              value={sizeManager.presets.find(preset =>
+                preset.width === sizeManager.width &&
+                preset.height === sizeManager.height &&
+                preset.unit === sizeManager.unit
+              )?.label || 'custom'}
+              onChange={(event) => {
+                const preset = sizeManager.presets.find((item) => item.label === event.target.value);
+                if (preset) {
+                  sizeManager.setUnit(preset.unit);
+                  sizeManager.setDimensions(preset.width, preset.height);
+                }
+              }}
+              className="h-9 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
+            >
+              {sizeManager.presets.map((preset) => (
+                <option key={preset.label} value={preset.label}>
+                  {preset.width} x {preset.height}
+                </option>
+              ))}
+              <option value="custom" disabled>Custom size</option>
+            </select>
+            <select
+              aria-label="Banner size unit"
+              value={sizeManager.unit}
+              onChange={(event) => sizeManager.setUnit(event.target.value)}
+              className="h-9 w-[70px] rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
+            >
+              <option value="Feet">Ft</option>
+              <option value="Inches">In</option>
+            </select>
+            <span className="whitespace-nowrap border-l border-gray-200 pl-4 text-sm font-medium text-gray-800">
+              ${(6.99 + (uiManager.backEnabled ? 5.38 : 0)).toFixed(2)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setFooterDialog('continue')}
+              className="h-9 whitespace-nowrap rounded-md bg-[#ff7848] px-5 text-sm font-semibold text-white hover:bg-[#f36737] focus:outline-none focus:ring-2 focus:ring-orange-300"
+            >
+              Continue
+            </button>
+          </div>
         </div>
       </footer>
 
@@ -237,6 +321,62 @@ function App() {
           bannerHeight={sizeManager.unit === 'Feet' ? sizeManager.height : sizeManager.height / 12}
         />
       )}
+      {footerDialog && (
+        <FooterInfoDialog
+          type={footerDialog}
+          size={`${sizeManager.width} x ${sizeManager.height} ${sizeManager.unit}`}
+          price={`$${(6.99 + (uiManager.backEnabled ? 5.38 : 0)).toFixed(2)}`}
+          onClose={() => setFooterDialog(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function FooterAction({ icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-full items-center gap-1.5 whitespace-nowrap px-3 text-sm text-gray-800 hover:bg-gray-50"
+    >
+      <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+      </svg>
+      {label}
+    </button>
+  );
+}
+
+function FooterInfoDialog({ type, size, price, onClose }) {
+  const content = {
+    help: {
+      title: 'Need Help?',
+      description: 'Use the tools on the left to edit your banner. Select an object to move, resize, or adjust it. Use Share to email front and back artwork.',
+    },
+    guideline: {
+      title: 'Banner Guidelines',
+      description: 'Keep important text and graphics inside the red safe-area guide. Choose the finished banner size before sharing your artwork.',
+    },
+    continue: {
+      title: 'Ready to Continue',
+      description: `Your ${size} banner is ready. Current design total: ${price}. Checkout is not connected yet.`,
+    },
+  }[type];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="footer-info-title" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+        <h2 id="footer-info-title" className="text-xl font-semibold text-gray-900">{content.title}</h2>
+        <p className="mt-3 text-sm leading-6 text-gray-600">{content.description}</p>
+        <div className="mt-6 flex justify-end">
+          <button type="button" onClick={onClose} className="rounded-md bg-[#ff7848] px-5 py-2 text-sm font-semibold text-white hover:bg-[#f36737]">
+            Close
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
