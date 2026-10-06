@@ -6,17 +6,17 @@ import { fitObjectToCanvas } from '../../utils/objectSizing';
 import TransformNode from './TransformNode';
 import rootStore from '../../stores/RootStore';
 
-const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWidth, canvasHeight, side, clippingPlanes, zOffset = 0.005 }) => {
+const DraggableText = observer(({ layer, depth, dragLimits, canvasWidth, canvasHeight, side, clippingPlanes, zOffset = 0.005 }) => {
   const [textures, setTextures] = useState(null);
   const [aspect, setAspect] = useState(1);
 
   useLayoutEffect(() => {
-    if (!text || text.trim() === '') {
+    if (!layer.text || layer.text.trim() === '') {
       setTextures(null);
       return;
     }
 
-    const generator = new TextTextureGenerator(text);
+    const generator = new TextTextureGenerator(layer.text);
     const diff = generator.getDiffuse();
     const norm = generator.getNormal();
     const ao = generator.getAO();
@@ -29,22 +29,22 @@ const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWid
       norm.dispose();
       ao.dispose();
     }
-  }, [text]);
+  }, [layer.text]);
 
   if (!textures) return null;
 
   const { width: w, height: h } = fitObjectToCanvas(canvasWidth, canvasHeight, aspect);
-  const opacity = layerProps.opacity !== undefined ? layerProps.opacity : 1;
+  const opacity = layer.opacity !== undefined ? layer.opacity : 1;
 
   return (
     <TransformNode 
       width={w} 
       height={h} 
-      position={[layerProps.position?.[0] || 0, layerProps.position?.[1] || 0, depth / 2 + zOffset]} 
+      position={[layer.position?.[0] || 0, layer.position?.[1] || 0, depth / 2 + zOffset]} 
       dragLimits={dragLimits} 
       objectType="text"
-      objectId={side === 'back' ? 'text-back' : 'text'}
-      layerProps={layerProps}
+      objectId={layer.id}
+      layerProps={layer}
     >
       <mesh renderOrder={100}>
         <planeGeometry args={[w, h]} />

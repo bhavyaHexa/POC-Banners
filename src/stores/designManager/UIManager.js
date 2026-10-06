@@ -43,15 +43,10 @@ export default class UIManager {
   cutSelected() {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
-    if (this.selectedObject.type === 'graphic') {
-      const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
-      if (layer) {
-        this.clipboard = { type: 'graphic', data: { ...layer } };
-        layerManager.removeLayer(this.selectedObject.id);
-      }
-    } else if (this.selectedObject.type === 'text') {
-      this.clipboard = { type: 'text', text: layerManager.bannerText, props: { ...layerManager.textProps } };
-      layerManager.setBannerText('');
+    const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
+    if (layer) {
+      this.clipboard = { type: layer.type, data: { ...layer } };
+      layerManager.removeLayer(this.selectedObject.id);
     }
     this.clearSelectedObject();
   }
@@ -59,70 +54,48 @@ export default class UIManager {
   copySelected() {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
-    if (this.selectedObject.type === 'graphic') {
-      const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
-      if (layer) {
-        this.clipboard = { type: 'graphic', data: { ...layer } };
-      }
-    } else if (this.selectedObject.type === 'text') {
-      this.clipboard = { type: 'text', text: layerManager.bannerText, props: { ...layerManager.textProps } };
+    const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
+    if (layer) {
+      this.clipboard = { type: layer.type, data: { ...layer } };
     }
   }
 
   pasteClipboard() {
     if (!this.clipboard) return;
     const { layerManager } = this.designManager;
-    if (this.clipboard.type === 'graphic') {
-      const newLayer = {
-        ...this.clipboard.data,
-        id: Date.now() + Math.random(),
-        side: this.activeSide
-      };
-      layerManager.layers.push(newLayer);
-      this.setSelectedObject({ type: 'graphic', id: newLayer.id });
-    } else if (this.clipboard.type === 'text') {
-      layerManager.setBannerText(this.clipboard.text);
-      layerManager.updateTextProps({ ...this.clipboard.props });
-    }
+    const newLayer = {
+      ...this.clipboard.data,
+      id: Date.now() + Math.random(),
+      side: this.activeSide
+    };
+    layerManager.layers.push(newLayer);
+    this.setSelectedObject({ type: newLayer.type, id: newLayer.id });
   }
 
   deleteSelected() {
     if (!this.selectedObject) return;
-    const { layerManager } = this.designManager;
-    if (this.selectedObject.type === 'graphic') {
-      layerManager.removeLayer(this.selectedObject.id);
-    } else if (this.selectedObject.type === 'text') {
-      layerManager.setBannerText('');
-    }
+    this.designManager.layerManager.removeLayer(this.selectedObject.id);
     this.clearSelectedObject();
   }
 
   positionSelected(direction = 'forward') {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
-    if (this.selectedObject.type === 'graphic') {
-      if (direction === 'forward') {
-        layerManager.moveLayerForward(this.selectedObject.id);
-      } else {
-        layerManager.moveLayerBackward(this.selectedObject.id);
-      }
+    if (direction === 'forward') {
+      layerManager.moveLayerForward(this.selectedObject.id);
+    } else {
+      layerManager.moveLayerBackward(this.selectedObject.id);
     }
   }
 
   opacitySelected() {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
-    if (this.selectedObject.type === 'graphic') {
-      const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
-      if (layer) {
-        const current = layer.opacity !== undefined ? layer.opacity : 1;
-        const next = current <= 0.25 ? 1 : current - 0.25;
-        layerManager.updateLayer(this.selectedObject.id, { opacity: next });
-      }
-    } else if (this.selectedObject.type === 'text') {
-      const current = layerManager.textProps.opacity !== undefined ? layerManager.textProps.opacity : 1;
+    const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
+    if (layer) {
+      const current = layer.opacity !== undefined ? layer.opacity : 1;
       const next = current <= 0.25 ? 1 : current - 0.25;
-      layerManager.updateTextProps({ opacity: next });
+      layerManager.updateLayer(this.selectedObject.id, { opacity: next });
     }
   }
 
@@ -130,39 +103,27 @@ export default class UIManager {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
     const step = Math.PI / 4; // 45 degrees
-    if (this.selectedObject.type === 'graphic') {
-      const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
-      if (layer) {
-        layerManager.updateLayer(this.selectedObject.id, { rotation: (layer.rotation || 0) + step });
-      }
-    } else if (this.selectedObject.type === 'text') {
-      layerManager.updateTextProps({ rotation: (layerManager.textProps.rotation || 0) + step });
+    const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
+    if (layer) {
+      layerManager.updateLayer(this.selectedObject.id, { rotation: (layer.rotation || 0) + step });
     }
   }
 
   flipHSelected() {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
-    if (this.selectedObject.type === 'graphic') {
-      const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
-      if (layer) {
-        layerManager.updateLayer(this.selectedObject.id, { flipH: !layer.flipH });
-      }
-    } else if (this.selectedObject.type === 'text') {
-      layerManager.updateTextProps({ flipH: !layerManager.textProps.flipH });
+    const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
+    if (layer) {
+      layerManager.updateLayer(this.selectedObject.id, { flipH: !layer.flipH });
     }
   }
 
   flipVSelected() {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
-    if (this.selectedObject.type === 'graphic') {
-      const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
-      if (layer) {
-        layerManager.updateLayer(this.selectedObject.id, { flipV: !layer.flipV });
-      }
-    } else if (this.selectedObject.type === 'text') {
-      layerManager.updateTextProps({ flipV: !layerManager.textProps.flipV });
+    const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
+    if (layer) {
+      layerManager.updateLayer(this.selectedObject.id, { flipV: !layer.flipV });
     }
   }
 }

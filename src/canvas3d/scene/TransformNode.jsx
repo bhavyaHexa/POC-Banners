@@ -354,11 +354,7 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
             // Save the true final absolute position to the global layer manager!
             const newPos = [...livePosRef.current];
             const globalManager = rootStore.designManager.layerManager;
-            if (objectType === 'text') {
-              globalManager.updateTextProps({ position: [newPos[0], newPos[1]] });
-            } else {
-              globalManager.updateLayer(objectId, { position: [newPos[0], newPos[1]] });
-            }
+            globalManager.updateLayer(objectId, { position: [newPos[0], newPos[1]] });
           }}
         >
           <group ref={innerWrapRef} position={savedPos}>

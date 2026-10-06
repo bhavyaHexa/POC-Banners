@@ -1,41 +1,13 @@
 import { makeAutoObservable } from "mobx";
 
 export default class LayerManager {
-  layers = []; // { id, type, url, opacity, flipH, flipV, rotation, scale, side }
+  layers = []; // { id, type, url/text, opacity, flipH, flipV, rotation, scale, side, position }
   uploads = [];
-  bannerTextFront = "";
-  bannerTextBack = "";
-  textPropsFront = { opacity: 1, flipH: false, flipV: false, rotation: 0, scale: 1 };
-  textPropsBack = { opacity: 1, flipH: false, flipV: false, rotation: 0, scale: 1 };
   backgroundColor = "#ffffff";
   
   constructor(designManager) {
     this.designManager = designManager;
     makeAutoObservable(this);
-  }
-
-  get bannerText() {
-    return this.designManager.uiManager.activeSide === 'back' ? this.bannerTextBack : this.bannerTextFront;
-  }
-  
-  set bannerText(text) {
-    if (this.designManager.uiManager.activeSide === 'back') {
-      this.bannerTextBack = text;
-    } else {
-      this.bannerTextFront = text;
-    }
-  }
-
-  get textProps() {
-    return this.designManager.uiManager.activeSide === 'back' ? this.textPropsBack : this.textPropsFront;
-  }
-
-  setBannerText(text) {
-    this.bannerText = text;
-    if (text && text.trim() !== "") {
-      const id = this.designManager.uiManager.activeSide === 'back' ? 'text-back' : 'text';
-      this.designManager.uiManager.setSelectedObject({ type: 'text', id });
-    }
   }
 
   setBackgroundColor(color) {
@@ -80,6 +52,22 @@ export default class LayerManager {
     };
     this.layers.push(layer);
     this.designManager.uiManager.setSelectedObject({ type: layer.type, id: layer.id });
+  }
+
+  addText(text = "Sample Text") {
+    const layer = {
+      id: Date.now() + Math.random(),
+      type: 'text',
+      text,
+      opacity: 1,
+      flipH: false,
+      flipV: false,
+      rotation: 0,
+      scale: 1,
+      side: this.designManager.uiManager.activeSide || 'front'
+    };
+    this.layers.push(layer);
+    this.designManager.uiManager.setSelectedObject({ type: 'text', id: layer.id });
   }
 
   addUpload(name, url) {
@@ -128,10 +116,5 @@ export default class LayerManager {
     if (layer) {
       Object.assign(layer, updates);
     }
-  }
-
-  updateTextProps(updates) {
-    const props = this.designManager.uiManager.activeSide === 'back' ? this.textPropsBack : this.textPropsFront;
-    Object.assign(props, updates);
   }
 }

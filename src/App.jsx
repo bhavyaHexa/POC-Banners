@@ -11,21 +11,14 @@ const SelectionToolbar = observer(() => {
 
   let currentOpacity = 1;
   if (uiManager.selectedObject) {
-    if (uiManager.selectedObject.type === 'graphic') {
-      const layer = layerManager.layers.find(l => l.id === uiManager.selectedObject.id);
-      if (layer && layer.opacity !== undefined) currentOpacity = layer.opacity;
-    } else if (uiManager.selectedObject.type === 'text') {
-      const props = uiManager.activeSide === 'back' ? layerManager.textPropsBack : layerManager.textPropsFront;
-      if (props.opacity !== undefined) currentOpacity = props.opacity;
-    }
+    const layer = layerManager.layers.find(l => l.id === uiManager.selectedObject.id);
+    if (layer && layer.opacity !== undefined) currentOpacity = layer.opacity;
   }
 
   const handleOpacityChange = (e) => {
     const val = Number(e.target.value) / 100;
-    if (uiManager.selectedObject.type === 'graphic') {
+    if (uiManager.selectedObject) {
       layerManager.updateLayer(uiManager.selectedObject.id, { opacity: val });
-    } else if (uiManager.selectedObject.type === 'text') {
-      layerManager.updateTextProps({ opacity: val });
     }
   };
 

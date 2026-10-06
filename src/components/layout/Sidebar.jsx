@@ -135,17 +135,37 @@ const GraphicsPanel = observer(() => {
 });
 
 const TextPanel = observer(() => {
-  const { layerManager } = rootStore.designManager;
+  const { layerManager, uiManager } = rootStore.designManager;
+  const activeSide = uiManager.activeSide || 'front';
+  const textLayers = layerManager.layers.filter(l => l.type === 'text' && (l.side === activeSide || !l.side));
+
   return (
     <div className="p-5 flex flex-col gap-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Add Text</h2>
-        <textarea
-          value={layerManager.bannerText}
-          onChange={(e) => layerManager.setBannerText(e.target.value)}
-          placeholder="Enter banner text..."
-          className="w-full h-32 bg-white border border-gray-300 rounded-md p-3 text-sm text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors shadow-sm resize-none"
-        />
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Text</h2>
+        <p className="text-sm text-gray-600 mb-6">Edit your text below, or click on the field you'd like to edit directly on your design.</p>
+        
+        <div className="flex flex-col gap-4">
+          {textLayers.map(layer => (
+            <textarea
+              key={layer.id}
+              value={layer.text}
+              onChange={(e) => layerManager.updateLayer(layer.id, { text: e.target.value })}
+              onFocus={() => uiManager.setSelectedObject({ type: 'text', id: layer.id })}
+              placeholder="Enter text..."
+              className={`w-full h-24 bg-white border rounded-md p-3 text-sm text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors shadow-sm resize-none ${
+                uiManager.selectedObject?.id === layer.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-300'
+              }`}
+            />
+          ))}
+          
+          <button
+            onClick={() => layerManager.addText("Sample Text")}
+            className="self-end rounded-md bg-[#ff7848] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#f36737] focus:outline-none focus:ring-2 focus:ring-orange-300 transition-colors"
+          >
+            + Add New Text Field
+          </button>
+        </div>
       </div>
     </div>
   );

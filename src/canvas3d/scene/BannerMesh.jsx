@@ -49,21 +49,23 @@ function BannerMesh() {
         />
       </mesh>
 
-      {/* The Draggable Text Layer (FRONT) */}
-      <DraggableText
-        text={layerManager.bannerTextFront}
-        layerProps={layerManager.textPropsFront}
-        depth={depth}
-        zOffset={0.02}
-        dragLimits={dragLimits}
-        canvasWidth={widthIn3D}
-        canvasHeight={heightIn3D}
-        side="front"
-        clippingPlanes={clippingPlanes}
-      />
+      {/* The Draggable Text Layers (FRONT) */}
+      {layerManager.layers.filter(l => l.type === 'text' && (l.side === 'front' || !l.side)).map((layer, index) => (
+        <DraggableText
+          key={layer.id}
+          layer={layer}
+          depth={depth}
+          zOffset={0.02 + (index * 0.0001)}
+          dragLimits={dragLimits}
+          canvasWidth={widthIn3D}
+          canvasHeight={heightIn3D}
+          side="front"
+          clippingPlanes={clippingPlanes}
+        />
+      ))}
 
       {/* The Draggable Graphic Layers (FRONT) */}
-      {layerManager.layers.filter(l => l.side === 'front' || !l.side).map((layer, index) => {
+      {layerManager.layers.filter(l => l.type === 'graphic' && (l.side === 'front' || !l.side)).map((layer, index) => {
         const isBg = layer.isBackground;
         const baseZ = isBg ? 0.001 : 0.005;
         const rOrder = isBg ? 1 : 10 + index;
@@ -84,21 +86,23 @@ function BannerMesh() {
       })}
 
       <group rotation={[0, Math.PI, 0]}>
-        {/* The Draggable Text Layer (BACK) */}
-        <DraggableText
-          text={layerManager.bannerTextBack}
-          layerProps={layerManager.textPropsBack}
-          depth={depth}
-          zOffset={0.02}
-          dragLimits={dragLimits}
-          canvasWidth={widthIn3D}
-          canvasHeight={heightIn3D}
-          side="back"
-          clippingPlanes={clippingPlanes}
-        />
+        {/* The Draggable Text Layers (BACK) */}
+        {layerManager.layers.filter(l => l.type === 'text' && l.side === 'back').map((layer, index) => (
+          <DraggableText
+            key={layer.id}
+            layer={layer}
+            depth={depth}
+            zOffset={0.02 + (index * 0.0001)}
+            dragLimits={dragLimits}
+            canvasWidth={widthIn3D}
+            canvasHeight={heightIn3D}
+            side="back"
+            clippingPlanes={clippingPlanes}
+          />
+        ))}
 
         {/* The Draggable Graphic Layers (BACK) */}
-        {layerManager.layers.filter(l => l.side === 'back').map((layer, index) => {
+        {layerManager.layers.filter(l => l.type === 'graphic' && l.side === 'back').map((layer, index) => {
           const isBg = layer.isBackground;
           const baseZ = isBg ? 0.001 : 0.005;
           const rOrder = isBg ? 1 : 10 + index;
