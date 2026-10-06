@@ -26,7 +26,7 @@ export default observer(function Viewport3D() {
   const { uiManager } = rootStore.designManager;
 
   return (
-    <div className="w-full h-full bg-[#f8f9fa] cursor-grab active:cursor-grabbing relative">
+    <div className="w-full h-full bg-[#f8f9fa] relative">
       <Canvas
         camera={{ position: [0, 0, 10], fov: 45 }}
         shadows

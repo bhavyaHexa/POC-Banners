@@ -49,11 +49,29 @@ export default class UIManager {
     if (!this.selectedObject) return;
     const { layerManager } = this.designManager;
     if (this.selectedObject.type === 'graphic') {
-      layerManager.duplicateLayer(this.selectedObject.id);
-    } else if (this.selectedObject.type === 'text') {
-      if (layerManager.bannerText) {
-        layerManager.setBannerText(layerManager.bannerText + ' Copy');
+      const layer = layerManager.layers.find(l => l.id === this.selectedObject.id);
+      if (layer) {
+        this.clipboard = { type: 'graphic', data: { ...layer } };
       }
+    } else if (this.selectedObject.type === 'text') {
+      this.clipboard = { type: 'text', text: layerManager.bannerText, props: { ...layerManager.textProps } };
+    }
+  }
+
+  pasteClipboard() {
+    if (!this.clipboard) return;
+    const { layerManager } = this.designManager;
+    if (this.clipboard.type === 'graphic') {
+      const newLayer = {
+        ...this.clipboard.data,
+        id: Date.now() + Math.random(),
+        side: this.activeSide
+      };
+      layerManager.layers.push(newLayer);
+      this.setSelectedObject({ type: 'graphic', id: newLayer.id });
+    } else if (this.clipboard.type === 'text') {
+      layerManager.setBannerText(this.clipboard.text);
+      layerManager.updateTextProps({ ...this.clipboard.props });
     }
   }
 

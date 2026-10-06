@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import { DragControls, Line } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { observer } from 'mobx-react-lite';
 import rootStore from '../../stores/RootStore';
@@ -8,6 +8,19 @@ import rootStore from '../../stores/RootStore';
 const TransformNode = observer(({ width, height, position, dragLimits, objectType, objectId, layerProps = {}, children }) => {
   const { uiManager } = rootStore.designManager;
   const meshRef = useRef();
+  const controls = useThree((state) => state.controls);
+  const camera = useThree((state) => state.camera);
+  const gl = useThree((state) => state.gl);
+
+  const getScreenCenter = () => {
+    if (!meshRef.current) return { x: 0, y: 0 };
+    const pos = new THREE.Vector3();
+    meshRef.current.getWorldPosition(pos);
+    pos.project(camera);
+    const x = (pos.x * 0.5 + 0.5) * gl.domElement.clientWidth;
+    const y = (pos.y * -0.5 + 0.5) * gl.domElement.clientHeight;
+    return { x, y };
+  };
 
   // Local transform states
   const [scale, setScale] = useState(1);
@@ -36,14 +49,20 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
   const handlePointerDown = (e, handleMode) => {
     e.stopPropagation();
     e.target.setPointerCapture(e.pointerId);
+    if (controls) controls.enabled = false;
     uiManager.setIsDragging(true);
     uiManager.setSelectedObject({ type: objectType, id: objectId });
+    const center = getScreenCenter();
+    const startAngle = Math.atan2(e.clientY - center.y, e.clientX - center.x);
+    
     startRef.current = {
       x: e.clientX,
       y: e.clientY,
       s: scale,
       r: localRotation,
-      mode: handleMode
+      mode: handleMode,
+      center,
+      startAngle
     };
     setMode(handleMode);
   };
@@ -56,8 +75,14 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
     const dy = e.clientY - startRef.current.y;
 
     if (mode === 'rotate') {
-      const delta = (dx - dy) * 0.015;
-      setLocalRotation(startRef.current.r - delta);
+      const currentAngle = Math.atan2(e.clientY - startRef.current.center.y, e.clientX - startRef.current.center.x);
+      let angleDiff = currentAngle - startRef.current.startAngle;
+      
+      // Normalize angle difference to avoid jumps when crossing the -PI/PI boundary
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      
+      setLocalRotation(startRef.current.r - angleDiff);
     } else if (mode.startsWith('scale')) {
       let delta = 0;
       switch (mode) {
@@ -102,6 +127,7 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
       }
       uiManager.setIsDragging(false);
       setMode('none');
+      if (controls) controls.enabled = true;
     }
   };
 
@@ -166,10 +192,16 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
       axisLock="z" 
       dragLimits={dynamicLimits}
       onDragStart={() => {
+        if (controls) controls.enabled = false;
         uiManager.setIsDragging(true);
         uiManager.setSelectedObject({ type: objectType, id: objectId });
+        document.body.style.setProperty('cursor', 'move', 'important');
       }}
-      onDragEnd={() => uiManager.setIsDragging(false)}
+      onDragEnd={() => {
+        if (controls) controls.enabled = true;
+        uiManager.setIsDragging(false);
+        document.body.style.removeProperty('cursor');
+      }}
     >
       <group 
         ref={meshRef} 
@@ -182,7 +214,21 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
         }}
       >
         {/* Render wrapped content */}
-        <group style={{ opacity }}>
+        <group 
+          style={{ opacity }}
+          onPointerOver={(e) => { 
+            e.stopPropagation(); 
+            document.body.style.setProperty('cursor', 'move', 'important'); 
+          }}
+          onPointerOut={(e) => { 
+            e.stopPropagation(); 
+            document.body.style.removeProperty('cursor');
+            document.body.style.cursor = 'auto';
+          }}
+          onPointerDown={(e) => {
+            document.body.style.setProperty('cursor', 'move', 'important');
+          }}
+        >
           {children}
         </group>
         
