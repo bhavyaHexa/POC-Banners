@@ -7,10 +7,18 @@ export default class SizeManager {
   
   // Example dimensions setup
   presets = [
-    { label: "3x2 ft", width: 3, height: 2, unit: "Feet" },
-    { label: "4x3 ft", width: 4, height: 3, unit: "Feet" },
-    { label: "6x3 ft", width: 6, height: 3, unit: "Feet" },
-    { label: "8x4 ft", width: 8, height: 4, unit: "Feet" }
+    { label: "3 x 2", width: 3, height: 2, unit: "Feet" },
+    { label: "2 x 3", width: 2, height: 3, unit: "Feet" },
+    { label: "2 x 4", width: 2, height: 4, unit: "Feet" },
+    { label: "4 x 2", width: 4, height: 2, unit: "Feet" },
+    { label: "3 x 4", width: 3, height: 4, unit: "Feet" },
+    { label: "6 x 2", width: 6, height: 2, unit: "Feet" },
+    { label: "3 x 6", width: 3, height: 6, unit: "Feet" },
+    { label: "6 x 3", width: 6, height: 3, unit: "Feet" },
+    { label: "4 x 6", width: 4, height: 6, unit: "Feet" },
+    { label: "6 x 4", width: 6, height: 4, unit: "Feet" },
+    { label: "4 x 8", width: 4, height: 8, unit: "Feet" },
+    { label: "8 x 4", width: 8, height: 4, unit: "Feet" }
   ];
 
   constructor(designManager) {

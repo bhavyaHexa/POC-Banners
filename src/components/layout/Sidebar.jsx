@@ -56,11 +56,10 @@ const SizePanel = observer(() => {
     <div className="p-5 flex flex-col gap-6">
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Banner Size</h2>
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {sizeManager.presets.map((preset, index) => {
             const displayW = sizeManager.unit === 'Inches' ? preset.width * 12 : preset.width;
             const displayH = sizeManager.unit === 'Inches' ? preset.height * 12 : preset.height;
-            const unitSuffix = sizeManager.unit === 'Inches' ? 'in' : 'ft';
             const isActive = sizeManager.width === displayW && sizeManager.height === displayH;
 
             return (
@@ -69,13 +68,13 @@ const SizePanel = observer(() => {
                 onClick={() => {
                   sizeManager.setDimensions(displayW, displayH);
                 }}
-                className={`py-2 px-4 rounded-md text-sm font-medium transition-colors border ${
+                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors border ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm'
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                    ? 'bg-white text-orange-500 border-orange-500'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
-                {`${displayW}x${displayH} ${unitSuffix}`}
+                {`${displayW} x ${displayH}`}
               </button>
             );
           })}
