@@ -46,6 +46,7 @@ export default class LayerManager {
 
   setBackgroundImage(url) {
     this.backgroundImage = url;
+    this.backgroundColor = '#ffffff';
   }
 
   addGraphic(url) {
