@@ -61,7 +61,15 @@ export class TextTextureGenerator {
   }
 
   _createTexture() {
-    const tex = new THREE.CanvasTexture(this.canvas);
+    // Create a new canvas to capture the current state of this.canvas
+    // so diffuse, normal, and ao maps don't share the same reference.
+    const snapCanvas = document.createElement('canvas');
+    snapCanvas.width = this.resX;
+    snapCanvas.height = this.resY;
+    const snapCtx = snapCanvas.getContext('2d');
+    snapCtx.drawImage(this.canvas, 0, 0);
+
+    const tex = new THREE.CanvasTexture(snapCanvas);
     tex.anisotropy = 16;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
