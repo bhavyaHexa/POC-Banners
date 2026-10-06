@@ -178,23 +178,7 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
     }
   }, [position?.[2]]);
 
-  useFrame(() => {
-    // If selected and dragging, constantly record the DragControl's wrapper position
-    if (isSelected && innerWrapRef.current && innerWrapRef.current.parent) {
-      // drei's DragControls sets the matrix directly (matrixAutoUpdate=false)
-      const parentMatrix = innerWrapRef.current.parent.matrix;
-      const p = new THREE.Vector3();
-      p.setFromMatrixPosition(parentMatrix);
-      
-      const intendedZ = position ? position[2] : 0;
-      
-      // Calculate TRUE absolute local position by adding drag delta (p) to the initial savedPos
-      const totalX = p.x + savedPos[0];
-      const totalY = p.y + savedPos[1];
-      
-      livePosRef.current = [totalX, totalY, intendedZ];
-    }
-  });
+  // Position tracking moved to onDrag
 
   // When transitioning to deselected state, bake the accumulated live position into savedPos.
   // We cannot do this during onDragEnd because DragControls would double-apply its internal offset!
@@ -354,6 +338,13 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
             if (controls) controls.enabled = false;
             uiManager.setIsDragging(true);
             document.body.style.setProperty('cursor', 'move', 'important');
+          }}
+          onDrag={(matrix) => {
+            if (matrix && matrix.isMatrix4) {
+               const p = new THREE.Vector3();
+               p.setFromMatrixPosition(matrix);
+               livePosRef.current = [p.x + savedPos[0], p.y + savedPos[1], position ? position[2] : 0];
+            }
           }}
           onDragEnd={() => {
             if (controls) controls.enabled = true;

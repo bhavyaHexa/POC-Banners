@@ -266,25 +266,31 @@ function App() {
             <label htmlFor="banner-size-preset" className="text-sm text-gray-700">Size</label>
             <select
               id="banner-size-preset"
-              value={sizeManager.presets.find(preset =>
-                preset.width === sizeManager.width &&
-                preset.height === sizeManager.height &&
-                preset.unit === sizeManager.unit
-              )?.label || 'custom'}
+              value={(() => {
+                const wInFeet = sizeManager.unit === 'Inches' ? sizeManager.width / 12 : sizeManager.width;
+                const hInFeet = sizeManager.unit === 'Inches' ? sizeManager.height / 12 : sizeManager.height;
+                const matched = sizeManager.presets.find(preset => preset.width === wInFeet && preset.height === hInFeet);
+                return matched ? matched.label : 'custom';
+              })()}
               onChange={(event) => {
                 const preset = sizeManager.presets.find((item) => item.label === event.target.value);
                 if (preset) {
-                  sizeManager.setUnit(preset.unit);
-                  sizeManager.setDimensions(preset.width, preset.height);
+                  const newW = sizeManager.unit === 'Inches' ? preset.width * 12 : preset.width;
+                  const newH = sizeManager.unit === 'Inches' ? preset.height * 12 : preset.height;
+                  sizeManager.setDimensions(newW, newH);
                 }
               }}
               className="h-9 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
             >
-              {sizeManager.presets.map((preset) => (
-                <option key={preset.label} value={preset.label}>
-                  {preset.width} x {preset.height}
-                </option>
-              ))}
+              {sizeManager.presets.map((preset) => {
+                const displayW = sizeManager.unit === 'Inches' ? preset.width * 12 : preset.width;
+                const displayH = sizeManager.unit === 'Inches' ? preset.height * 12 : preset.height;
+                return (
+                  <option key={preset.label} value={preset.label}>
+                    {displayW} x {displayH}
+                  </option>
+                );
+              })}
               <option value="custom" disabled>Custom size</option>
             </select>
             <select
