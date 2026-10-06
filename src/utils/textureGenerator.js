@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 
 export class TextTextureGenerator {
-  constructor(text) {
+  constructor(text, fontFamily = 'system-ui, -apple-system, sans-serif') {
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
     const fontSize = 300; 
-    tempCtx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
+    this.fontFamily = fontFamily;
+    tempCtx.font = `900 ${fontSize}px ${this.fontFamily}`;
     
     const lines = text.split('\n');
     let maxWidth = 0;
@@ -42,7 +43,7 @@ export class TextTextureGenerator {
     this.ctx.fillStyle = fillStyle;
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.font = `900 ${this.fontSize}px system-ui, -apple-system, sans-serif`;
+    this.ctx.font = `900 ${this.fontSize}px ${this.fontFamily}`;
 
     this.ctx.imageSmoothingEnabled = true;
     this.ctx.imageSmoothingQuality = 'high';

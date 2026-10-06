@@ -59,6 +59,7 @@ export default class LayerManager {
       id: Date.now() + Math.random(),
       type: 'text',
       text,
+      fontFamily: 'system-ui, -apple-system, sans-serif',
       opacity: 1,
       flipH: false,
       flipV: false,

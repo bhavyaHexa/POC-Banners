@@ -23,7 +23,13 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
   };
 
   // Local transform states
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(layerProps.scale !== undefined ? layerProps.scale : 1);
+
+  useEffect(() => {
+    if (layerProps.scale !== undefined) {
+      setScale(layerProps.scale);
+    }
+  }, [layerProps.scale]);
   const [localRotation, setLocalRotation] = useState(0);
   const [mode, setMode] = useState('none');
   const startRef = useRef({ x: 0, y: 0, s: 1, r: 0, mode: 'none' });
@@ -126,6 +132,11 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
         // pointer release fallback
       }
       uiManager.setIsDragging(false);
+      
+      if (mode.startsWith('scale')) {
+        rootStore.designManager.layerManager.updateLayer(objectId, { scale });
+      }
+
       setMode('none');
       if (controls) controls.enabled = true;
     }

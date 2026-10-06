@@ -9,11 +9,11 @@ const SelectionToolbar = observer(() => {
   const { uiManager, layerManager } = rootStore.designManager;
   const [isOpacityOpen, setIsOpacityOpen] = useState(false);
 
-  let currentOpacity = 1;
-  if (uiManager.selectedObject) {
-    const layer = layerManager.layers.find(l => l.id === uiManager.selectedObject.id);
-    if (layer && layer.opacity !== undefined) currentOpacity = layer.opacity;
-  }
+  const layer = uiManager.selectedObject 
+    ? layerManager.layers.find(l => l.id === uiManager.selectedObject.id) 
+    : null;
+
+  let currentOpacity = layer?.opacity ?? 1;
 
   const handleOpacityChange = (e) => {
     const val = Number(e.target.value) / 100;
@@ -21,6 +21,13 @@ const SelectionToolbar = observer(() => {
       layerManager.updateLayer(uiManager.selectedObject.id, { opacity: val });
     }
   };
+
+  const handleFontFamilyChange = (e) => {
+    if (uiManager.selectedObject) {
+      layerManager.updateLayer(uiManager.selectedObject.id, { fontFamily: e.target.value });
+    }
+  };
+
 
   const selectionActions = [
     { label: 'Cut', icon: 'M6 6l12 12M18 6L6 18M6 6a2 2 0 1 0 0 .01M18 18a2 2 0 1 0 0 .01', action: () => uiManager.cutSelected() },
@@ -40,6 +47,42 @@ const SelectionToolbar = observer(() => {
       aria-label="Selected object actions"
       className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center bg-white border border-gray-200 rounded-xl shadow-lg px-3 py-1.5 z-30 w-max max-w-[calc(100%-2rem)] gap-1"
     >
+      {layer?.type === 'text' && (
+        <>
+          <div className="flex items-center px-1">
+            <select
+              value={layer.fontFamily || 'system-ui, -apple-system, sans-serif'}
+              onChange={handleFontFamilyChange}
+              className="text-xs font-semibold bg-transparent border-none text-gray-700 outline-none cursor-pointer hover:bg-gray-100 rounded px-1 py-1"
+            >
+              <option value="system-ui, -apple-system, sans-serif">Sans-serif</option>
+              <option value="serif">Serif</option>
+              <option value="monospace">Monospace</option>
+              <option value="Impact">Impact</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
+            </select>
+          </div>
+          <span className="h-5 border-l border-gray-200 mx-1" />
+          <div className="flex items-center px-1">
+            <input
+              type="number"
+              min="10"
+              max="1000"
+              value={Math.round((layer.scale || 1) * 100)}
+              onChange={(e) => {
+                const val = Number(e.target.value) / 100;
+                if (val > 0 && uiManager.selectedObject) {
+                  layerManager.updateLayer(uiManager.selectedObject.id, { scale: val });
+                }
+              }}
+              title="Font Size"
+              className="text-xs font-semibold text-gray-700 border border-gray-200 rounded px-2 py-1 w-16 outline-none focus:border-blue-400"
+            />
+          </div>
+          <span className="h-5 border-l border-gray-200 mx-1" />
+        </>
+      )}
       {selectionActions.map((action, index) => {
         if (action.type === 'opacity') {
           return (
@@ -107,7 +150,6 @@ function App() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [shareError, setShareError] = useState('');
   const [previews, setPreviews] = useState(null);
-  const [footerDialog, setFooterDialog] = useState(null);
 
   const registerScreenshotCapture = useCallback((capture) => {
     captureScreenshotsRef.current = capture;
@@ -168,12 +210,24 @@ function App() {
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fa] text-gray-900 overflow-hidden font-sans">
       <header className="h-16 bg-white flex items-center justify-between px-8 border-b border-gray-200 shadow-sm z-10">
-        <h1 className="text-xl font-bold tracking-tight text-gray-800 flex items-center gap-2">
-          3D Banner Designer
-        </h1>
-        <div className="text-sm font-medium text-gray-600 bg-gray-100 px-4 py-1.5 rounded-full border border-gray-200 shadow-sm">
-          Current Size: {sizeManager.width} x {sizeManager.height} {sizeManager.unit}
+        <div className="flex items-center gap-8">
+          <h1 className="text-xl font-bold tracking-tight text-gray-800 flex items-center gap-2">
+            3D Banner Designer
+          </h1>
+          <div className="text-sm font-medium text-gray-600 bg-gray-100 px-4 py-1.5 rounded-full border border-gray-200 shadow-sm">
+            Current Size: {sizeManager.width} x {sizeManager.height} {sizeManager.unit}
+          </div>
         </div>
+        
+        <button 
+          onClick={openShareDialog}
+          className="flex items-center gap-2 rounded-md bg-white border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm"
+        >
+          <svg className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 8a3 3 0 10-2.83-4M6 12a3 3 0 100-6 3 3 0 000 6zm12 9a3 3 0 100-6 3 3 0 000 6zM8.6 10.8l6.8 4.4m0-7.4l-6.8 4.4" />
+          </svg>
+          Share
+        </button>
       </header>
       
       <div className="flex flex-1 overflow-hidden">
@@ -182,48 +236,13 @@ function App() {
         <main className="flex-1 relative shadow-inner bg-[#f8f9fa]">
           {showSelectionToolbar && <SelectionToolbar />}
           <Viewport3D onCaptureReady={registerScreenshotCapture} />
-        </main>
-      </div>
-
-      <footer className="relative z-20 h-[58px] shrink-0 overflow-x-auto border-t border-gray-200 bg-white shadow-sm">
-        <div className="flex h-full min-w-[1050px] items-center justify-between gap-4 px-4">
-          <div className="flex h-full shrink-0 items-center rounded-r-xl bg-white">
-            <FooterAction icon="M12 18h.01M9.09 9a3 3 0 015.82 1c0 2-3 3-3 3" label="Need Help" onClick={() => setFooterDialog('help')} />
-            <span className="h-7 border-l border-gray-200" />
-            <FooterAction icon="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" label="Guideline" onClick={() => setFooterDialog('guideline')} />
-            <span className="h-7 border-l border-gray-200" />
-            <FooterAction icon="M18 8a3 3 0 10-2.83-4M6 12a3 3 0 100-6 3 3 0 000 6zm12 9a3 3 0 100-6 3 3 0 000 6zM8.6 10.8l6.8 4.4m0-7.4l-6.8 4.4" label="Share" onClick={openShareDialog} />
-            <span className="mx-3 h-7 border-l border-gray-200" />
-            <label className="sr-only" htmlFor="banner-zoom">Banner zoom</label>
-            <input
-              id="banner-zoom"
-              type="range"
-              min="50"
-              max="150"
-              step="5"
-              value={uiManager.zoomLevel}
-              onChange={(event) => uiManager.setZoomLevel(event.target.value)}
-              className="w-28 accent-blue-900"
-            />
-            <span className="mx-2 h-1 w-1 rounded-full bg-blue-950" />
-            <select
-              aria-label="Zoom level"
-              value={uiManager.zoomLevel}
-              onChange={(event) => uiManager.setZoomLevel(event.target.value)}
-              className="h-10 w-24 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
-            >
-              {[50, 75, 100, 125, 150].map((zoom) => (
-                <option key={zoom} value={zoom}>{zoom}%</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex h-full min-w-0 flex-1 items-center justify-center gap-3">
+          
+          <div className={`absolute right-6 flex items-center gap-1 z-20 bg-white p-1 rounded-lg shadow-md border border-gray-200 transition-all duration-300 ${showSelectionToolbar ? 'top-20' : 'top-6'}`}>
             <button
               type="button"
               onClick={() => uiManager.setActiveSide('front')}
               aria-pressed={uiManager.activeSide === 'front'}
-              className={`h-full px-6 text-sm font-semibold transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
                 uiManager.activeSide === 'front'
                   ? 'bg-blue-50 text-blue-800'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -231,83 +250,32 @@ function App() {
             >
               Front
             </button>
-            {uiManager.backEnabled ? (
-              <button
-                type="button"
-                onClick={() => uiManager.setActiveSide('back')}
-                aria-pressed={uiManager.activeSide === 'back'}
-                className={`h-full px-6 text-sm font-semibold transition-colors ${
-                  uiManager.activeSide === 'back'
-                    ? 'bg-blue-50 text-blue-800'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                Back
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => uiManager.enableBackSide()}
-                className="whitespace-nowrap rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:border-blue-300 hover:bg-blue-50"
-              >
-                Add Back for <strong>$5.38</strong>
-              </button>
-            )}
-          </div>
-
-          <div className="flex shrink-0 items-center gap-3">
-            <label htmlFor="banner-size-preset" className="text-sm text-gray-700">Size</label>
-            <select
-              id="banner-size-preset"
-              value={(() => {
-                const wInFeet = sizeManager.unit === 'Inches' ? sizeManager.width / 12 : sizeManager.width;
-                const hInFeet = sizeManager.unit === 'Inches' ? sizeManager.height / 12 : sizeManager.height;
-                const matched = sizeManager.presets.find(preset => preset.width === wInFeet && preset.height === hInFeet);
-                return matched ? matched.label : 'custom';
-              })()}
-              onChange={(event) => {
-                const preset = sizeManager.presets.find((item) => item.label === event.target.value);
-                if (preset) {
-                  const newW = sizeManager.unit === 'Inches' ? preset.width * 12 : preset.width;
-                  const newH = sizeManager.unit === 'Inches' ? preset.height * 12 : preset.height;
-                  sizeManager.setDimensions(newW, newH);
-                }
-              }}
-              className="h-9 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
-            >
-              {sizeManager.presets.map((preset) => {
-                const displayW = sizeManager.unit === 'Inches' ? preset.width * 12 : preset.width;
-                const displayH = sizeManager.unit === 'Inches' ? preset.height * 12 : preset.height;
-                return (
-                  <option key={preset.label} value={preset.label}>
-                    {displayW} x {displayH}
-                  </option>
-                );
-              })}
-              <option value="custom" disabled>Custom size</option>
-            </select>
-            <select
-              aria-label="Banner size unit"
-              value={sizeManager.unit}
-              onChange={(event) => sizeManager.setUnit(event.target.value)}
-              className="h-9 w-[70px] rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
-            >
-              <option value="Feet">Ft</option>
-              <option value="Inches">In</option>
-            </select>
-            <span className="whitespace-nowrap border-l border-gray-200 pl-4 text-sm font-medium text-gray-800">
-              ${(6.99 + (uiManager.backEnabled ? 5.38 : 0)).toFixed(2)}
-            </span>
             <button
               type="button"
-              onClick={() => setFooterDialog('continue')}
-              className="h-9 whitespace-nowrap rounded-md bg-[#ff7848] px-5 text-sm font-semibold text-white hover:bg-[#f36737] focus:outline-none focus:ring-2 focus:ring-orange-300"
+              onClick={() => {
+                if (!uiManager.backEnabled) uiManager.enableBackSide();
+                uiManager.setActiveSide('back');
+              }}
+              aria-pressed={uiManager.activeSide === 'back'}
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+                uiManager.activeSide === 'back'
+                  ? 'bg-blue-50 text-blue-800'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
             >
-              Continue
+              Back
             </button>
           </div>
-        </div>
-      </footer>
+          <button
+            type="button"
+            onClick={() => alert('Checkout is not connected yet.')}
+            className="absolute bottom-6 right-6 z-20 h-10 rounded-md bg-[#ff7848] px-8 text-sm font-semibold text-white shadow-lg hover:bg-[#f36737] focus:outline-none focus:ring-2 focus:ring-orange-300"
+          >
+            Continue
+          </button>
+        </main>
+      </div>
+
 
       {isShareOpen && (
         <ShareDialog
@@ -320,65 +288,12 @@ function App() {
           bannerHeight={sizeManager.unit === 'Feet' ? sizeManager.height : sizeManager.height / 12}
         />
       )}
-      {footerDialog && (
-        <FooterInfoDialog
-          type={footerDialog}
-          size={`${sizeManager.width} x ${sizeManager.height} ${sizeManager.unit}`}
-          price={`$${(6.99 + (uiManager.backEnabled ? 5.38 : 0)).toFixed(2)}`}
-          onClose={() => setFooterDialog(null)}
-        />
-      )}
+
     </div>
   );
 }
 
-function FooterAction({ icon, label, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-full items-center gap-1.5 whitespace-nowrap px-3 text-sm text-gray-800 hover:bg-gray-50"
-    >
-      <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-      </svg>
-      {label}
-    </button>
-  );
-}
 
-function FooterInfoDialog({ type, size, price, onClose }) {
-  const content = {
-    help: {
-      title: 'Need Help?',
-      description: 'Use the tools on the left to edit your banner. Select an object to move, resize, or adjust it. Use Share to email front and back artwork.',
-    },
-    guideline: {
-      title: 'Banner Guidelines',
-      description: 'Keep important text and graphics inside the red safe-area guide. Choose the finished banner size before sharing your artwork.',
-    },
-    continue: {
-      title: 'Ready to Continue',
-      description: `Your ${size} banner is ready. Current design total: ${price}. Checkout is not connected yet.`,
-    },
-  }[type];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="footer-info-title" className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-        <h2 id="footer-info-title" className="text-xl font-semibold text-gray-900">{content.title}</h2>
-        <p className="mt-3 text-sm leading-6 text-gray-600">{content.description}</p>
-        <div className="mt-6 flex justify-end">
-          <button type="button" onClick={onClose} className="rounded-md bg-[#ff7848] px-5 py-2 text-sm font-semibold text-white hover:bg-[#f36737]">
-            Close
-          </button>
-        </div>
-      </section>
-    </div>
-  );
-}
 
 function ShareDialog({ onClose, onRetryCapture, isCapturing, error, previews, bannerWidth, bannerHeight }) {
   const [recipientName, setRecipientName] = useState('');

@@ -16,7 +16,7 @@ const DraggableText = observer(({ layer, depth, dragLimits, canvasWidth, canvasH
       return;
     }
 
-    const generator = new TextTextureGenerator(layer.text);
+    const generator = new TextTextureGenerator(layer.text, layer.fontFamily);
     const diff = generator.getDiffuse();
     const norm = generator.getNormal();
     const ao = generator.getAO();
@@ -29,7 +29,7 @@ const DraggableText = observer(({ layer, depth, dragLimits, canvasWidth, canvasH
       norm.dispose();
       ao.dispose();
     }
-  }, [layer.text]);
+  }, [layer.text, layer.fontFamily]);
 
   if (!textures) return null;
 
