@@ -101,16 +101,16 @@ export default observer(function Viewport3D({ onCaptureReady }) {
   const controlsRef = useRef();
 
   return (
-    <div className="w-full h-full bg-[#f8f9fa] relative">
+    <div className="w-full h-full bg-white relative">
       <Canvas
         key="canvas-with-clipping"
-        gl={{ localClippingEnabled: true, preserveDrawingBuffer: true }}
+        gl={{ localClippingEnabled: true, preserveDrawingBuffer: true, toneMapping: THREE.NoToneMapping }}
         camera={{ position: [0, 0, 10], fov: 45 }}
         shadows
         onPointerMissed={() => uiManager.clearSelectedObject()}
       >
-        <ambientLight intensity={0.1} />
-        <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
+        <ambientLight intensity={1.0} />
+        <directionalLight position={[5, 5, 5]} intensity={1.0} castShadow />
         <directionalLight position={[-10, 5, -10]} intensity={0.5} />
         <Environment preset="studio" />
         <BannerMesh />
