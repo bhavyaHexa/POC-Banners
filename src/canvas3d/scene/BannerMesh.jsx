@@ -10,7 +10,7 @@ import { useImageTexture } from '../../utils/useImageTexture';
 // BackgroundMaterial removed as backgrounds are now graphic layers
 
 function BannerMesh() {
-  const { sizeManager, layerManager } = rootStore.designManager;
+  const { sizeManager, layerManager, uiManager } = rootStore.designManager;
   
   const inch = 1 / 12;
   const widthIn3D = sizeManager.unit === 'Feet' ? sizeManager.width : sizeManager.width / 12;
@@ -120,22 +120,26 @@ function BannerMesh() {
       </group>
 
       {/* Guide Lines rest just on top of the front face */}
-      <SafetyBleedLines 
-        width={widthIn3D} 
-        height={heightIn3D} 
-        bleedMargin={bleedMargin}
-        zOffset={(depth / 2) + 0.002} 
-      />
-
-      {/* Guide Lines rest just on top of the back face */}
-      <group rotation={[0, Math.PI, 0]}>
+      {uiManager.activeSide === 'front' && (
         <SafetyBleedLines 
           width={widthIn3D} 
           height={heightIn3D} 
           bleedMargin={bleedMargin}
           zOffset={(depth / 2) + 0.002} 
         />
-      </group>
+      )}
+
+      {/* Guide Lines rest just on top of the back face */}
+      {uiManager.activeSide === 'back' && (
+        <group rotation={[0, Math.PI, 0]}>
+          <SafetyBleedLines 
+            width={widthIn3D} 
+            height={heightIn3D} 
+            bleedMargin={bleedMargin}
+            zOffset={(depth / 2) + 0.002} 
+          />
+        </group>
+      )}
     </group>
   );
 }
