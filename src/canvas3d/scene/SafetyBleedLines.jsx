@@ -140,6 +140,27 @@ function SafetyBleedLines({ width, height, bleedMargin, zOffset }) {
         {`${width} x ${height} (ft)`}
       </Text>
       
+      {/* Corner Grommets (Brass Rings) - Positioned halfway between safety and bleed lines */}
+      {[
+        [-(width/2 + bleedMargin/2), (height/2 + bleedMargin/2), z],
+        [(width/2 + bleedMargin/2), (height/2 + bleedMargin/2), z],
+        [(width/2 + bleedMargin/2), -(height/2 + bleedMargin/2), z],
+        [-(width/2 + bleedMargin/2), -(height/2 + bleedMargin/2), z]
+      ].map((pos, i) => (
+        <group key={`grommet-group-${i}`} position={pos}>
+          {/* Brass Ring */}
+          <mesh renderOrder={900}>
+            <ringGeometry args={[0.05, 0.08, 32]} />
+            <meshBasicMaterial color="#c5a059" depthTest={false} transparent={true} side={THREE.DoubleSide} />
+          </mesh>
+          {/* Punched Hole Illusion - pure white to match scene background */}
+          <mesh renderOrder={899}>
+            <circleGeometry args={[0.05, 32]} />
+            <meshBasicMaterial color="#ffffff" depthTest={false} transparent={true} side={THREE.DoubleSide} opacity={1} />
+          </mesh>
+        </group>
+      ))}
+      
     </group>
   );
 }
