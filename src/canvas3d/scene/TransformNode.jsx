@@ -166,10 +166,21 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
     ];
   }, [dragLimits, width, height, scale, totalRotation]);
 
+  const [savedPos, setSavedPos] = useState([position?.[0] || 0, position?.[1] || 0, position?.[2] || 0]);
+  const livePosRef = useRef([position?.[0] || 0, position?.[1] || 0, position?.[2] || 0]);
+  const innerWrapRef = useRef();
+
   useFrame(() => {
-    if (meshRef.current && dynamicLimits) {
-      meshRef.current.position.x = THREE.MathUtils.clamp(meshRef.current.position.x, dynamicLimits[0][0], dynamicLimits[0][1]);
-      meshRef.current.position.y = THREE.MathUtils.clamp(meshRef.current.position.y, dynamicLimits[1][0], dynamicLimits[1][1]);
+    // If selected and dragging, constantly record the DragControl's wrapper position
+    if (isSelected && innerWrapRef.current && innerWrapRef.current.parent) {
+      const p = innerWrapRef.current.parent.position;
+      
+      // CRITICAL: DragControls might try to lock or reset the Z-axis.
+      // We MUST physically enforce our intended Z-offset so it doesn't sink into the background!
+      const intendedZ = position ? position[2] : 0;
+      if (p.z !== intendedZ) p.z = intendedZ;
+      
+      livePosRef.current = [p.x, p.y, intendedZ];
     }
   });
 
@@ -187,110 +198,156 @@ const TransformNode = observer(({ width, height, position, dragLimits, objectTyp
     { type: 'scale-lm', pos: [-halfW, 0, 0] }
   ];
 
-  return (
-    <DragControls 
-      axisLock="z" 
-      dragLimits={dynamicLimits}
-      onDragStart={() => {
-        if (controls) controls.enabled = false;
-        uiManager.setIsDragging(true);
-        uiManager.setSelectedObject({ type: objectType, id: objectId });
-        document.body.style.setProperty('cursor', 'move', 'important');
+  const innerNode = (
+    <group 
+      ref={meshRef} 
+      position={[0, 0, 0]} // Position handled by wrapper now
+      scale={[scale * flipH, scale * flipV, 1]} 
+      rotation={[0, 0, totalRotation]}
+      userData={{ id: objectId }} // Tag the group for raycast identification
+      onClick={(event) => {
+        if (event.intersections && event.intersections.length > 0) {
+          const closestMesh = event.intersections[0].object;
+          let hitId = null;
+          let current = closestMesh;
+          while (current && !hitId) {
+            if (current.userData && current.userData.id) hitId = current.userData.id;
+            current = current.parent;
+          }
+          if (hitId === objectId) {
+            uiManager.setSelectedObject({ type: objectType, id: objectId });
+          }
+        }
       }}
-      onDragEnd={() => {
-        if (controls) controls.enabled = true;
-        uiManager.setIsDragging(false);
-        document.body.style.removeProperty('cursor');
+      onPointerDown={(event) => {
+        if (event.intersections && event.intersections.length > 0) {
+          const closestMesh = event.intersections[0].object;
+          let hitId = null;
+          let current = closestMesh;
+          while (current && !hitId) {
+            if (current.userData && current.userData.id) hitId = current.userData.id;
+            current = current.parent;
+          }
+          if (hitId === objectId) {
+            uiManager.setSelectedObject({ type: objectType, id: objectId });
+          }
+        }
       }}
     >
+      {/* Invisible solid hitbox for reliable raycasting across the entire bounding box */}
+      <mesh renderOrder={998}>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial transparent opacity={0} depthTest={false} depthWrite={false} />
+      </mesh>
+
+      {/* Render wrapped content */}
       <group 
-        ref={meshRef} 
-        position={position || [0, 0, 0]} 
-        scale={[scale * flipH, scale * flipV, 1]} 
-        rotation={[0, 0, totalRotation]}
-        onClick={(event) => {
-          event.stopPropagation();
-          uiManager.setSelectedObject({ type: objectType, id: objectId });
+        style={{ opacity }}
+        onPointerOver={(e) => { 
+          e.stopPropagation(); 
+          document.body.style.setProperty('cursor', isSelected ? 'move' : 'pointer', 'important'); 
+        }}
+        onPointerOut={(e) => { 
+          e.stopPropagation(); 
+          document.body.style.removeProperty('cursor');
+          document.body.style.cursor = 'auto';
         }}
       >
-        {/* Render wrapped content */}
-        <group 
-          style={{ opacity }}
-          onPointerOver={(e) => { 
-            e.stopPropagation(); 
-            document.body.style.setProperty('cursor', 'move', 'important'); 
-          }}
-          onPointerOut={(e) => { 
-            e.stopPropagation(); 
-            document.body.style.removeProperty('cursor');
-            document.body.style.cursor = 'auto';
-          }}
-          onPointerDown={(e) => {
+        {children}
+      </group>
+      
+      {/* Bounding Box & Handles visible when selected */}
+      {isSelected && (
+        <group position={[0, 0, 0.01]}>
+          {/* Outer Purple Frame */}
+          <Line 
+            points={[
+              [-halfW, halfH, 0], 
+              [halfW, halfH, 0], 
+              [halfW, -halfH, 0], 
+              [-halfW, -halfH, 0], 
+              [-halfW, halfH, 0]
+            ]} 
+            color={purple} 
+            lineWidth={2}
+            renderOrder={999}
+            depthTest={false}
+          />
+          
+          {/* Stem line to top rotation ball */}
+          <Line points={[[0, halfH, 0], [0, halfH + 0.35, 0]]} color={purple} lineWidth={1.8} renderOrder={999} depthTest={false} />
+          
+          {/* Rotation Ball Handle at top center stem */}
+          <mesh 
+            position={[0, halfH + 0.35, 0]}
+            renderOrder={999}
+            onPointerDown={(e) => handlePointerDown(e, 'rotate')}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'alias'; }}
+            onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = 'auto'; }}
+          >
+            <circleGeometry args={[dotSize * 1.3, 24]} />
+            <meshBasicMaterial color={purple} depthTest={false} />
+          </mesh>
+          
+          {/* 4 Corners + 4 Sides Resize Handles */}
+          {handles.map((h, i) => {
+            let cursor = 'pointer';
+            if (h.type === 'scale-tl' || h.type === 'scale-br') cursor = 'nwse-resize';
+            else if (h.type === 'scale-tr' || h.type === 'scale-bl') cursor = 'nesw-resize';
+            else if (h.type === 'scale-tm' || h.type === 'scale-bm') cursor = 'ns-resize';
+            else if (h.type === 'scale-lm' || h.type === 'scale-rm') cursor = 'ew-resize';
+
+            return (
+              <mesh 
+                key={i} 
+                position={h.pos}
+                renderOrder={999}
+                onPointerDown={(e) => handlePointerDown(e, h.type)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = cursor; }}
+                onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = 'auto'; }}
+              >
+                <circleGeometry args={[dotSize, 18]} />
+                <meshBasicMaterial color={purple} depthTest={false} />
+              </mesh>
+            );
+          })}
+        </group>
+      )}
+    </group>
+  );
+
+  return (
+    <group onPointerDown={(e) => e.stopPropagation()}>
+      {isSelected ? (
+        <DragControls 
+          axisLock="z" 
+          dragLimits={dynamicLimits}
+          onDragStart={() => {
+            if (controls) controls.enabled = false;
+            uiManager.setIsDragging(true);
             document.body.style.setProperty('cursor', 'move', 'important');
           }}
+          onDragEnd={() => {
+            if (controls) controls.enabled = true;
+            uiManager.setIsDragging(false);
+            document.body.style.removeProperty('cursor');
+            setSavedPos([...livePosRef.current]);
+          }}
         >
-          {children}
-        </group>
-        
-        {/* Bounding Box & Handles visible when selected */}
-        {isSelected && (
-          <group position={[0, 0, 0.01]}>
-            {/* Outer Purple Frame */}
-            <Line 
-              points={[
-                [-halfW, halfH, 0], 
-                [halfW, halfH, 0], 
-                [halfW, -halfH, 0], 
-                [-halfW, -halfH, 0], 
-                [-halfW, halfH, 0]
-              ]} 
-              color={purple} 
-              lineWidth={2}
-            />
-            
-            {/* Stem line to top rotation ball */}
-            <Line points={[[0, halfH, 0], [0, halfH + 0.35, 0]]} color={purple} lineWidth={1.8} />
-            
-            {/* Rotation Ball Handle at top center stem */}
-            <mesh 
-              position={[0, halfH + 0.35, 0]}
-              onPointerDown={(e) => handlePointerDown(e, 'rotate')}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'alias'; }}
-              onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = 'auto'; }}
-            >
-              <circleGeometry args={[dotSize * 1.3, 24]} />
-              <meshBasicMaterial color={purple} depthTest={false} />
-            </mesh>
-            
-            {/* 4 Corners + 4 Sides Resize Handles */}
-            {handles.map((h, i) => {
-              let cursor = 'pointer';
-              if (h.type === 'scale-tl' || h.type === 'scale-br') cursor = 'nwse-resize';
-              else if (h.type === 'scale-tr' || h.type === 'scale-bl') cursor = 'nesw-resize';
-              else if (h.type === 'scale-tm' || h.type === 'scale-bm') cursor = 'ns-resize';
-              else if (h.type === 'scale-lm' || h.type === 'scale-rm') cursor = 'ew-resize';
-
-              return (
-                <mesh 
-                  key={i} 
-                  position={h.pos}
-                  onPointerDown={(e) => handlePointerDown(e, h.type)}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = cursor; }}
-                  onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = 'auto'; }}
-                >
-                  <circleGeometry args={[dotSize, 18]} />
-                  <meshBasicMaterial color={purple} depthTest={false} />
-                </mesh>
-              );
-            })}
+          <group ref={innerWrapRef} position={savedPos}>
+            {innerNode}
           </group>
-        )}
-      </group>
-    </DragControls>
+        </DragControls>
+      ) : (
+        <group position={savedPos}>
+          {innerNode}
+        </group>
+      )}
+    </group>
   );
 });
 

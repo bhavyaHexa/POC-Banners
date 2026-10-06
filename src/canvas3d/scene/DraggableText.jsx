@@ -6,7 +6,7 @@ import { fitObjectToCanvas } from '../../utils/objectSizing';
 import TransformNode from './TransformNode';
 import rootStore from '../../stores/RootStore';
 
-const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWidth, canvasHeight, side, clippingPlanes }) => {
+const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWidth, canvasHeight, side, clippingPlanes, zOffset = 0.005 }) => {
   const [textures, setTextures] = useState(null);
   const [aspect, setAspect] = useState(1);
 
@@ -40,7 +40,7 @@ const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWid
     <TransformNode 
       width={w} 
       height={h} 
-      position={[0, 0, depth / 2 + 0.005]} 
+      position={[0, 0, depth / 2 + zOffset]} 
       dragLimits={dragLimits} 
       objectType="text"
       objectId={side === 'back' ? 'text-back' : 'text'}
@@ -56,6 +56,7 @@ const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWid
           opacity={opacity}
           depthTest={false}
           depthWrite={false}
+          alphaTest={0.01}
           roughness={1.0}
           metalness={0.0}
           clippingPlanes={clippingPlanes}

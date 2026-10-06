@@ -54,6 +54,7 @@ function BannerMesh() {
         text={layerManager.bannerTextFront}
         layerProps={layerManager.textPropsFront}
         depth={depth}
+        zOffset={0.02}
         dragLimits={dragLimits}
         canvasWidth={widthIn3D}
         canvasHeight={heightIn3D}
@@ -62,18 +63,25 @@ function BannerMesh() {
       />
 
       {/* The Draggable Graphic Layers (FRONT) */}
-      {layerManager.layers.filter(l => l.side === 'front' || !l.side).map(layer => (
-        <DraggableGraphic
-          key={layer.id}
-          layer={layer}
-          depth={depth}
-          dragLimits={dragLimits}
-          canvasWidth={widthIn3D}
-          canvasHeight={heightIn3D}
-          bleedMargin={bleedMargin}
-          clippingPlanes={clippingPlanes}
-        />
-      ))}
+      {layerManager.layers.filter(l => l.side === 'front' || !l.side).map((layer, index) => {
+        const isBg = layer.isBackground;
+        const baseZ = isBg ? 0.001 : 0.005;
+        const rOrder = isBg ? 1 : 10 + index;
+        return (
+          <DraggableGraphic
+            key={layer.id}
+            layer={layer}
+            depth={depth}
+            zOffset={baseZ + (index * 0.0001)}
+            renderOrder={rOrder}
+            dragLimits={dragLimits}
+            canvasWidth={widthIn3D}
+            canvasHeight={heightIn3D}
+            bleedMargin={bleedMargin}
+            clippingPlanes={clippingPlanes}
+          />
+        );
+      })}
 
       <group rotation={[0, Math.PI, 0]}>
         {/* The Draggable Text Layer (BACK) */}
@@ -81,6 +89,7 @@ function BannerMesh() {
           text={layerManager.bannerTextBack}
           layerProps={layerManager.textPropsBack}
           depth={depth}
+          zOffset={0.02}
           dragLimits={dragLimits}
           canvasWidth={widthIn3D}
           canvasHeight={heightIn3D}
@@ -89,18 +98,25 @@ function BannerMesh() {
         />
 
         {/* The Draggable Graphic Layers (BACK) */}
-        {layerManager.layers.filter(l => l.side === 'back').map(layer => (
-          <DraggableGraphic
-            key={layer.id}
-            layer={layer}
-            depth={depth}
-            dragLimits={dragLimits}
-            canvasWidth={widthIn3D}
-            canvasHeight={heightIn3D}
-            bleedMargin={bleedMargin}
-            clippingPlanes={clippingPlanes}
-          />
-        ))}
+        {layerManager.layers.filter(l => l.side === 'back').map((layer, index) => {
+          const isBg = layer.isBackground;
+          const baseZ = isBg ? 0.001 : 0.005;
+          const rOrder = isBg ? 1 : 10 + index;
+          return (
+            <DraggableGraphic
+              key={layer.id}
+              layer={layer}
+              depth={depth}
+              zOffset={baseZ + (index * 0.0001)}
+              renderOrder={rOrder}
+              dragLimits={dragLimits}
+              canvasWidth={widthIn3D}
+              canvasHeight={heightIn3D}
+              bleedMargin={bleedMargin}
+              clippingPlanes={clippingPlanes}
+            />
+          );
+        })}
       </group>
 
       {/* Guide Lines rest just on top of the front face */}
