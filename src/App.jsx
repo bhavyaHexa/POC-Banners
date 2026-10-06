@@ -214,9 +214,7 @@ function App() {
           <h1 className="text-xl font-bold tracking-tight text-gray-800 flex items-center gap-2">
             3D Banner Designer
           </h1>
-          <div className="text-sm font-medium text-gray-600 bg-gray-100 px-4 py-1.5 rounded-full border border-gray-200 shadow-sm">
-            Current Size: {sizeManager.width} x {sizeManager.height} {sizeManager.unit}
-          </div>
+         
         </div>
         
         <button 
