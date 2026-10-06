@@ -28,6 +28,8 @@ export default observer(function Viewport3D() {
   return (
     <div className="w-full h-full bg-[#f8f9fa] relative">
       <Canvas
+        key="canvas-with-clipping"
+        gl={{ localClippingEnabled: true }}
         camera={{ position: [0, 0, 10], fov: 45 }}
         shadows
         onPointerMissed={() => uiManager.clearSelectedObject()}

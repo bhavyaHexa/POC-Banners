@@ -4,32 +4,10 @@ import rootStore from '../../stores/RootStore';
 import SafetyBleedLines from './SafetyBleedLines';
 import DraggableText from './DraggableText';
 import { DraggableGraphic } from './DraggableGraphic';
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { useImageTexture } from '../../utils/useImageTexture';
 
-const BackgroundMaterial = observer(({ color, image }) => {
-  const texture = useImageTexture(image);
-
-  // Always show color. If texture loaded, overlay it.
-  if (image && texture) {
-    return (
-      <meshStandardMaterial 
-        key={texture.uuid} 
-        map={texture} 
-        color={color} 
-        roughness={0.8} 
-      />
-    );
-  }
-  
-  return (
-    <meshStandardMaterial 
-      key="color-only"
-      color={color} 
-      roughness={0.8} 
-    />
-  );
-});
+// BackgroundMaterial removed as backgrounds are now graphic layers
 
 function BannerMesh() {
   const { sizeManager, layerManager } = rootStore.designManager;
@@ -51,12 +29,24 @@ function BannerMesh() {
     [-10, 10]
   ];
 
+  const clippingPlanes = useMemo(() => {
+    return [
+      new THREE.Plane(new THREE.Vector3(1, 0, 0), bleedW / 2),
+      new THREE.Plane(new THREE.Vector3(-1, 0, 0), bleedW / 2),
+      new THREE.Plane(new THREE.Vector3(0, 1, 0), bleedH / 2),
+      new THREE.Plane(new THREE.Vector3(0, -1, 0), bleedH / 2),
+    ];
+  }, [bleedW, bleedH]);
+
   return (
     <group>
       {/* The physical canvas as a Box to give it thickness */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[bleedW, bleedH, depth]} />
-        <BackgroundMaterial color={layerManager.backgroundColor} image={layerManager.backgroundImage} />
+        <meshStandardMaterial 
+          color={layerManager.backgroundColor} 
+          roughness={0.8} 
+        />
       </mesh>
 
       {/* The Draggable Text Layer (FRONT) */}
@@ -68,6 +58,7 @@ function BannerMesh() {
         canvasWidth={widthIn3D}
         canvasHeight={heightIn3D}
         side="front"
+        clippingPlanes={clippingPlanes}
       />
 
       {/* The Draggable Graphic Layers (FRONT) */}
@@ -79,6 +70,8 @@ function BannerMesh() {
           dragLimits={dragLimits}
           canvasWidth={widthIn3D}
           canvasHeight={heightIn3D}
+          bleedMargin={bleedMargin}
+          clippingPlanes={clippingPlanes}
         />
       ))}
 
@@ -92,6 +85,7 @@ function BannerMesh() {
           canvasWidth={widthIn3D}
           canvasHeight={heightIn3D}
           side="back"
+          clippingPlanes={clippingPlanes}
         />
 
         {/* The Draggable Graphic Layers (BACK) */}
@@ -103,6 +97,8 @@ function BannerMesh() {
             dragLimits={dragLimits}
             canvasWidth={widthIn3D}
             canvasHeight={heightIn3D}
+            bleedMargin={bleedMargin}
+            clippingPlanes={clippingPlanes}
           />
         ))}
       </group>

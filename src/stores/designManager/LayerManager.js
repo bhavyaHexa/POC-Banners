@@ -8,7 +8,6 @@ export default class LayerManager {
   textPropsFront = { opacity: 1, flipH: false, flipV: false, rotation: 0, scale: 1 };
   textPropsBack = { opacity: 1, flipH: false, flipV: false, rotation: 0, scale: 1 };
   backgroundColor = "#ffffff";
-  backgroundImage = null;
   
   constructor(designManager) {
     this.designManager = designManager;
@@ -41,12 +40,30 @@ export default class LayerManager {
 
   setBackgroundColor(color) {
     this.backgroundColor = color;
-    this.backgroundImage = null;
+    const bgLayerIndex = this.layers.findIndex(l => l.isBackground && l.side === this.designManager.uiManager.activeSide);
+    if (bgLayerIndex !== -1) {
+      this.layers.splice(bgLayerIndex, 1);
+    }
   }
 
   setBackgroundImage(url) {
-    this.backgroundImage = url;
+    const side = this.designManager.uiManager.activeSide || 'front';
+    let bgLayer = this.layers.find(l => l.isBackground && l.side === side);
+    if (!bgLayer) {
+       bgLayer = {
+         id: Date.now() + Math.random(),
+         type: 'graphic',
+         isBackground: true,
+         url,
+         opacity: 1, flipH: false, flipV: false, rotation: 0, scale: 1,
+         side
+       };
+       this.layers.unshift(bgLayer);
+    } else {
+       bgLayer.url = url;
+    }
     this.backgroundColor = '#ffffff';
+    this.designManager.uiManager.setSelectedObject({ type: 'graphic', id: bgLayer.id });
   }
 
   addGraphic(url) {

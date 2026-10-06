@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import * as THREE from 'three';
 import TransformNode from './TransformNode';
 import { useImageTexture } from '../../utils/useImageTexture';
 import { fitObjectToCanvas } from '../../utils/objectSizing';
 
-const GraphicContent = ({ url, opacity = 1, setAspect }) => {
+const GraphicContent = ({ url, opacity = 1, setAspect, clippingPlanes }) => {
   const texture = useImageTexture(url);
   
   useEffect(() => {
@@ -16,13 +17,30 @@ const GraphicContent = ({ url, opacity = 1, setAspect }) => {
   if (!texture) return <meshBasicMaterial transparent opacity={0} depthTest={false} depthWrite={false} />;
 
   return (
-    <meshBasicMaterial map={texture} transparent opacity={opacity} depthTest={false} depthWrite={false} />
+    <meshBasicMaterial 
+      map={texture} 
+      transparent 
+      opacity={opacity} 
+      depthTest={false} 
+      depthWrite={false} 
+      clippingPlanes={clippingPlanes}
+      clipIntersection={false}
+    />
   );
 };
 
-export const DraggableGraphic = observer(({ layer, depth, dragLimits, canvasWidth, canvasHeight }) => {
+export const DraggableGraphic = observer(({ layer, depth, dragLimits, canvasWidth, canvasHeight, bleedMargin = 0, clippingPlanes }) => {
   const [aspect, setAspect] = useState(1);
-  const { width: w, height: h } = fitObjectToCanvas(canvasWidth, canvasHeight, aspect);
+  
+  let w, h;
+  if (layer.isBackground) {
+    w = canvasWidth + (bleedMargin * 2);
+    h = canvasHeight + (bleedMargin * 2);
+  } else {
+    const size = fitObjectToCanvas(canvasWidth, canvasHeight, aspect);
+    w = size.width;
+    h = size.height;
+  }
 
   return (
     <TransformNode 
@@ -36,7 +54,7 @@ export const DraggableGraphic = observer(({ layer, depth, dragLimits, canvasWidt
     >
       <mesh renderOrder={10}>
         <planeGeometry args={[w, h]} />
-        <GraphicContent url={layer.url} opacity={layer.opacity} setAspect={setAspect} />
+        <GraphicContent url={layer.url} opacity={layer.opacity} setAspect={setAspect} clippingPlanes={clippingPlanes} />
       </mesh>
     </TransformNode>
   );

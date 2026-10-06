@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import * as THREE from 'three';
 import { TextTextureGenerator } from '../../utils/textureGenerator';
 import { fitObjectToCanvas } from '../../utils/objectSizing';
 import TransformNode from './TransformNode';
 import rootStore from '../../stores/RootStore';
 
-const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWidth, canvasHeight, side }) => {
+const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWidth, canvasHeight, side, clippingPlanes }) => {
   const [textures, setTextures] = useState(null);
   const [aspect, setAspect] = useState(1);
 
@@ -57,6 +58,8 @@ const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWid
           depthWrite={false}
           roughness={1.0}
           metalness={0.0}
+          clippingPlanes={clippingPlanes}
+          clipIntersection={false}
         />
       </mesh>
     </TransformNode>
