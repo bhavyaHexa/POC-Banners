@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 
 export default class ToolManager {
-  activeTool = "text"; // 'text', 'graphics', 'uploads', 'qrcode', etc.
+  activeTool = "size"; // 'size', 'text', 'background', 'graphics', 'uploads', 'qrcode'
   
   constructor(designManager) {
     this.designManager = designManager;
