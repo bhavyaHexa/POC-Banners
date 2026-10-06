@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useLayoutEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import * as THREE from 'three';
 import { TextTextureGenerator } from '../../utils/textureGenerator';
@@ -10,7 +10,7 @@ const DraggableText = observer(({ text, layerProps, depth, dragLimits, canvasWid
   const [textures, setTextures] = useState(null);
   const [aspect, setAspect] = useState(1);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!text || text.trim() === '') {
       setTextures(null);
       return;
